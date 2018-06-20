@@ -11,9 +11,13 @@
 """
 import configparser
 cf = configparser.ConfigParser()
-cf.read('temp.ini')
+cf.read('conf.ini')
+
+
 def get_config(key):
     return cf.get('default',key)
+
+
 def set_config(key,value):
     cf.set('default',key,value)
-    cf.write(open('temp.ini', 'w'))
+    cf.write(open('conf.ini', 'w'))
