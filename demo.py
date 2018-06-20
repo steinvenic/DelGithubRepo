@@ -26,14 +26,14 @@ headers = {
 }
 
 
-
+requests.packages.urllib3.disable_warnings()
 def get_authenticity_token():
-
     r = requests.get(url=base_url+'login',headers=headers,verify=False)
     cookie = r.cookies
     respose_etree = etree.HTML(r.text);
     authenticity_token = respose_etree.xpath('//input[@name="authenticity_token"]/@value')
     set_config('authenticity_token',authenticity_token[0])
+    logging.info('已获取authenticity_token')
     return  cookie
 
 def login():
@@ -51,6 +51,7 @@ def login():
       nick_name = respose_etree.xpath('//meta[@name="octolytics-actor-login"]/@content')
       set_config('nick_name',nick_name[0])
       cookie = r.cookies
+      logging.info('模拟登陆成功！')
       return cookie
 
 def get_new_auth():
@@ -62,9 +63,11 @@ def get_new_auth():
       r = requests.get(url,headers=headers,params=params,cookies=cookie,verify=False)
       html = etree.HTML(r.text)
       authenticity_token = html.xpath('//form[contains(@action,"delete")]//input[@name="authenticity_token"]/@value')
+      logging.info('获取authenticity_token成功！')
       return cookie,authenticity_token
 
 def delete_repo():
+      logging.info('正在删除%s' %get_config('repo_name'))
       d = get_new_auth()
       data = {
         "utf8": "✓",
@@ -74,8 +77,12 @@ def delete_repo():
                    "verify": get_config('repo_name'),
                    })
       url = base_url + get_config('nick_name') + '/' + get_config('repo_name') + '/settings/delete'
-      requests.post(url,headers=headers,cookies=d[0],data=data,verify=False)
-
+      r = requests.post(url,headers=headers,cookies=d[0],data=data,verify=False)
+      code = r.status_code
+      if r.status_code !=200:
+          logging.info('*'*20+'删除【%s】失败' % get_config('repo_name')+'*'*20)
+          sys.exit(1)
+      logging.info('删除%s成功' % get_config('repo_name'))
 
 def del_target(repo_name):
     set_config('repo_name',repo_name)
@@ -88,6 +95,7 @@ if __name__ == '__main__':
     logging.info(repo_list)
     for i in repo_list:
         del_target(i)
+
 
 
 
