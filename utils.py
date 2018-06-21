@@ -10,6 +10,8 @@
 @time: 2018/6/20 4:49
 """
 import configparser
+from http.cookies import SimpleCookie
+import pickle, os
 cf = configparser.ConfigParser()
 cf.read('conf.ini')
 
@@ -21,3 +23,12 @@ def get_config(key):
 def set_config(key,value):
     cf.set('default',key,value)
     cf.write(open('conf.ini', 'w'))
+
+
+def serialize_cookie(cookie):
+    with open('cookie', 'wb') as f:
+        pickle.dump({k.key: k.value for k in SimpleCookie(cookie).values()}, f)
+
+def deserialize_cookie():
+    with open('cookie', 'rb') as f:
+        return pickle.load(f)

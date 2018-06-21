@@ -9,6 +9,7 @@
 @file: delete.py
 @time: 2018/6/16 21:44
 """
+from http import cookiejar
 
 import requests,click,logging
 import sys
@@ -26,22 +27,24 @@ headers = {
 }
 #Remove SSL warning
 requests.packages.urllib3.disable_warnings()
-
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
 
 def get_cookie():
     r = requests.get(url=base_url+'login',headers=headers,verify=False)
     cookie = r.cookies
     respose_etree = etree.HTML(r.text);
-
     # Get authenticity_token By xpath
     authenticity_token = respose_etree.xpath('//input[@name="authenticity_token"]/@value')
     set_config('authenticity_token',authenticity_token[0])
     logging.info('已获取authenticity_token')
-    return  cookie
+    serialize_cookie(cookie)
+    set_config('isLogin', 'True')
 
 
 def login():
-    cookie = get_cookie()
+
+    cookie =deserialize_cookie()
     data = {
     "commit": "Sign in",
     "utf8": "✓",
@@ -56,16 +59,16 @@ def login():
     nick_name = respose_etree.xpath('//meta[@name="octolytics-actor-login"]/@content')
     if len(nick_name) > 0:
         set_config('nick_name',nick_name[0])
-        cookie = r.cookies
+        cookie1 = r.cookies
         logging.info('登陆成功！')
     else:
         logging.info('登陆失败，请检查配置文件【conf.ini】用户名和密码！')
         sys.exit(1)
-    return cookie
+    serialize_cookie(cookie1)
 
 
 def get_authenticity_token():
-    cookie = login()
+    cookie = deserialize_cookie()
     url = base_url+ get_config('nick_name') + '/' +get_config('repo_name') + '/settings'
     params = {
       "_pjax": "%23js-repo-pjax-container"
@@ -74,21 +77,21 @@ def get_authenticity_token():
     html = etree.HTML(r.text)
     authenticity_token = html.xpath('//form[contains(@action,"delete")]//input[@name="authenticity_token"]/@value')
     logging.info('获取authenticity_token成功！')
-    return cookie,authenticity_token
+    serialize_cookie(cookie)
+    return authenticity_token
 
 
 def delete_repo():
     logging.info('正在删除%s' %get_config('repo_name'))
-    d = get_authenticity_token()
     data = {
     "utf8": "✓",
     "_method": "delete",
     }
-    data.update({"authenticity_token":d[1],
+    data.update({"authenticity_token":get_authenticity_token(),
                "verify": get_config('repo_name'),
                })
     url = base_url + get_config('nick_name') + '/' + get_config('repo_name') + '/settings/delete'
-    r = requests.post(url,headers=headers,cookies=d[0],data=data,verify=False)
+    r = requests.post(url,headers=headers,cookies=deserialize_cookie(),data=data,verify=False)
     if r.status_code !=200:
       logging.info('*'*20+'删除【%s】失败' % get_config('repo_name')+'*'*20)
       sys.exit(1)
@@ -96,16 +99,22 @@ def delete_repo():
 
 
 def del_target(repo_name):
+    if get_config('isLogin')=='False':
+        get_cookie()
+        login()
+        get_authenticity_token()
     set_config('repo_name',repo_name)
     delete_repo()
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
+
     repo_list = sys.argv[1:]
     for i in repo_list:
         del_target(i)
+    set_config('isLogin','False')
+
+
 
 
 
