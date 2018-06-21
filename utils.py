@@ -9,9 +9,10 @@
 @file: utils.py
 @time: 2018/6/20 4:49
 """
-import configparser
+import configparser,requests
 from http.cookies import SimpleCookie
 import pickle, os
+from lxml import etree
 cf = configparser.ConfigParser()
 cf.read('conf.ini')
 
@@ -32,3 +33,5 @@ def serialize_cookie(cookie):
 def deserialize_cookie():
     with open('cookie', 'rb') as f:
         return pickle.load(f)
+
+

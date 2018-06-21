@@ -39,7 +39,6 @@ def get_cookie():
     set_config('authenticity_token',authenticity_token[0])
     logging.info('已获取authenticity_token')
     serialize_cookie(cookie)
-    set_config('isLogin', 'True')
 
 
 def login():
@@ -63,7 +62,7 @@ def login():
         logging.info('登陆成功！')
     else:
         logging.info('登陆失败，请检查配置文件【conf.ini】用户名和密码！')
-        sys.exit(1)
+        set_config('isLogin','False')
     serialize_cookie(cookie1)
 
 
@@ -78,6 +77,7 @@ def get_authenticity_token():
     authenticity_token = html.xpath('//form[contains(@action,"delete")]//input[@name="authenticity_token"]/@value')
     logging.info('获取authenticity_token成功！')
     serialize_cookie(cookie)
+    set_config('isLogin', 'True')
     return authenticity_token
 
 
@@ -98,21 +98,50 @@ def delete_repo():
     logging.info('*'*20+'删除[%s]成功' % get_config('repo_name') +'*'*20)
 
 
+def get_repo_list(page):
+    url = 'https://github.com/'+ get_config('nick_name')
+    params = {
+    "page": page,
+    "tab": "repositories"
+}
+    get_cookie()
+    login()
+    raw_html = requests.get(url,params,cookies=deserialize_cookie(),headers=headers,verify=False).text
+    e_html = etree.HTML(raw_html)
+    repo_list = e_html.xpath('//ul/li//a[@itemprop="name codeRepository"]/text()')
+    re_repo_list = [x.strip() for x in repo_list]
+    repo_nums = e_html.xpath('//a[@title="Repositories"]/span/text()')[0]
+    return re_repo_list,repo_nums
+
+def get_all_repo_list():
+    d = get_repo_list(1)
+    all_repo_list = d[0]
+    repo_nums = int(d[1])
+    if repo_nums < 31:
+        return  all_repo_list
+    else:
+        pages = repo_nums//30 + 1
+        for i in range(2,pages+1):
+            all_repo_list += get_repo_list(i)[0]
+        return all_repo_list
+
+
 def del_target(repo_name):
+    set_config('repo_name', repo_name)
     if get_config('isLogin')=='False':
         get_cookie()
         login()
         get_authenticity_token()
-    set_config('repo_name',repo_name)
     delete_repo()
 
 
-if __name__ == '__main__':
-
-    repo_list = sys.argv[1:]
-    for i in repo_list:
-        del_target(i)
-    set_config('isLogin','False')
+print(get_all_repo_list())
+# if __name__ == '__main__':
+#
+#     repo_list = sys.argv[1:]
+#     for i in repo_list:
+#         del_target(i)
+#     set_config('isLogin','False')
 
 
 
