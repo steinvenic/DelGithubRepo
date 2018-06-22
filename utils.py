@@ -25,7 +25,6 @@ def set_config(key,value):
     cf.set('default',key,value)
     cf.write(open('conf.ini', 'w'))
 
-
 def serialize_cookie(cookie):
     with open('cookie', 'wb') as f:
         pickle.dump({k.key: k.value for k in SimpleCookie(cookie).values()}, f)
