@@ -13,6 +13,7 @@ from http import cookiejar
 
 import requests,click,logging
 import sys
+import prettytable as pt
 from lxml import etree
 from utils import *
 base_url = 'https://github.com/'
@@ -31,18 +32,25 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
 
 def get_cookie():
+    '''
+    获取登录界面authenticity_token、保存cookie
+    :return: None
+    '''
     r = requests.get(url=base_url+'login',headers=headers,verify=False)
     cookie = r.cookies
     respose_etree = etree.HTML(r.text);
     # Get authenticity_token By xpath
     authenticity_token = respose_etree.xpath('//input[@name="authenticity_token"]/@value')
     set_config('authenticity_token',authenticity_token[0])
-    logging.info('已获取authenticity_token')
+    logging.info('已获取登录页authenticity_token')
     serialize_cookie(cookie)
 
 
 def login():
-
+    '''
+    登录，获取用户名、保存cookie
+    :return:
+    '''
     cookie =deserialize_cookie()
     data = {
     "commit": "Sign in",
@@ -58,15 +66,20 @@ def login():
     nick_name = respose_etree.xpath('//meta[@name="octolytics-actor-login"]/@content')
     if len(nick_name) > 0:
         set_config('nick_name',nick_name[0])
-        cookie1 = r.cookies
+        cookie = r.cookies
         logging.info('登陆成功！')
+        set_config('isLogin', 'True')
     else:
         logging.info('登陆失败，请检查配置文件【conf.ini】用户名和密码！')
         set_config('isLogin','False')
-    serialize_cookie(cookie1)
+    serialize_cookie(cookie)
 
 
 def get_authenticity_token():
+    '''
+    获取
+    :return:
+    '''
     cookie = deserialize_cookie()
     url = base_url+ get_config('nick_name') + '/' +get_config('repo_name') + '/settings'
     params = {
@@ -75,9 +88,8 @@ def get_authenticity_token():
     r = requests.get(url,headers=headers,params=params,cookies=cookie,verify=False)
     html = etree.HTML(r.text)
     authenticity_token = html.xpath('//form[contains(@action,"delete")]//input[@name="authenticity_token"]/@value')
-    logging.info('获取authenticity_token成功！')
+    logging.info('获取被删authenticity_token成功！')
     serialize_cookie(cookie)
-    set_config('isLogin', 'True')
     return authenticity_token
 
 
@@ -95,7 +107,7 @@ def delete_repo():
     if r.status_code !=200:
       logging.info('*'*20+'删除【%s】失败' % get_config('repo_name')+'*'*20)
       sys.exit(1)
-    logging.info('*'*20+'删除[%s]成功' % get_config('repo_name') +'*'*20)
+    logging.info('*'*20+'删除【%s】成功' % get_config('repo_name') +'*'*20)
 
 
 def get_repo_list(page):
@@ -104,10 +116,14 @@ def get_repo_list(page):
     "page": page,
     "tab": "repositories"
 }
-    get_cookie()
-    login()
-    raw_html = requests.get(url,params,cookies=deserialize_cookie(),headers=headers,verify=False).text
-    e_html = etree.HTML(raw_html)
+
+    raw_html = requests.get(url,params,cookies=deserialize_cookie(),headers=headers,verify=False)
+    if raw_html.status_code !=200 or get_config('isLogin')=='False' or get_config('isLogin')=='':
+        get_cookie()
+        login()
+        url = 'https://github.com/' + get_config('nick_name')
+        raw_html = requests.get(url, params, cookies=deserialize_cookie(), headers=headers, verify=False)
+    e_html = etree.HTML(raw_html.text)
     repo_list = e_html.xpath('//ul/li//a[@itemprop="name codeRepository"]/text()')
     re_repo_list = [x.strip() for x in repo_list]
     repo_nums = e_html.xpath('//a[@title="Repositories"]/span/text()')[0]
@@ -126,22 +142,71 @@ def get_all_repo_list():
         return all_repo_list
 
 
+
+
+def repo_table_list(flag):
+    repo_list = get_all_repo_list()
+    list_len = len(repo_list)
+    tb = pt.PrettyTable()
+    tb.field_names = ['ID_1', 'RepoName_1', 'ID_2', 'RepoName_2']
+    for i in range(0, list_len - 1, 2):
+        tb.add_row([i, repo_list[i], i + 1, repo_list[i + 1]])
+    if list_len % 2 == 1:
+        tb.add_row([list_len - 1, repo_list[-1], '*', '*'])
+    if flag == 'true':
+        print(tb)
+    return repo_list
+
+
 def del_target(repo_name):
     set_config('repo_name', repo_name)
-    if get_config('isLogin')=='False':
+    if get_config('isLogin')=='False'  or get_config('isLogin')=='':
         get_cookie()
         login()
         get_authenticity_token()
     delete_repo()
 
 
-print(get_all_repo_list())
-# if __name__ == '__main__':
-#
-#     repo_list = sys.argv[1:]
-#     for i in repo_list:
-#         del_target(i)
-#     set_config('isLogin','False')
+if __name__ == '__main__':
+    option = sys.argv[1]
+    if option == '-list':
+        repo_table_list('true')
+    elif option == '-name':
+        repo_list = sys.argv[2:]
+        confirm_status = input('确认删除%s？,按y确认' % str(repo_list))
+        if confirm_status == 'y':
+            set_config('pre_del',str(repo_list))
+            logging.info(repo_list)
+            for i in repo_list:
+                del_target(i)
+
+    elif option == '-id':
+        pre_del_list = []
+        repo_id_list = sys.argv[2:]
+        repo_list = repo_table_list('false')
+        for pre_del in repo_id_list:
+            pre_del_list.append(repo_list[int(pre_del)])
+
+        confirm_status = input('确认删除%s？,按y确认' % str(pre_del_list))
+        if confirm_status == 'y':
+            set_config('pre_del',str(pre_del_list))
+            logging.info(repo_id_list)
+            for i in pre_del_list:
+                del_target(i)
+
+    elif option == '-all':
+
+        repo_list = repo_table_list('false')
+
+
+        confirm_status = input('确认删除所有项目？？？？%s,按y确认' % str(repo_list))
+        if confirm_status == 'y':
+            set_config('pre_del',str(repo_list))
+            logging.info(repo_list)
+            for i in repo_list:
+                del_target(i)
+
+
 
 
 
