@@ -201,7 +201,7 @@ if __name__ == '__main__':
     '''
     option = sys.argv[1]
     # 打印所有项目
-    if option == '-list':
+    if option == '-ls':
         repo_table_list('true')
 
     # 以项目名方式删除
