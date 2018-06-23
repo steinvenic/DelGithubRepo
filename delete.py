@@ -130,6 +130,9 @@ def get_repo_list(page):
     return re_repo_list,repo_nums
 
 def get_all_repo_list():
+    if get_config('isLogin')=='False'  or get_config('isLogin')=='':
+        get_cookie()
+        login()
     d = get_repo_list(1)
     all_repo_list = d[0]
     repo_nums = int(d[1])
