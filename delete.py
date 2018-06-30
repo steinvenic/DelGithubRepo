@@ -173,7 +173,7 @@ def repo_table_list(flag):
     tb = pt.PrettyTable()
     tb.field_names = ['ID_1', 'RepoName_1', 'ID_2', 'RepoName_2']
     for i in range(0, list_len - 1, 2):
-        tb.add_row([i, repo_list[i], i + 1, repo_list[i + 1]])
+        tb.add_row(['[' + str(i) + ']', repo_list[i], '[' + str(i+1) + ']', repo_list[i + 1]])
     if list_len % 2 == 1:
         tb.add_row([list_len - 1, repo_list[-1], '*', '*'])
     if flag == 'true':
@@ -199,6 +199,9 @@ if __name__ == '__main__':
     '''
     click不易获取不定数量的参数，因此使用sys.argv获取命令参数
     '''
+    if get_config('user_name') == '' or get_config('password') == '':
+        logging.info('登陆失败，请检查配置文件【conf.ini】用户名和密码！')
+        sys.exit(1)
     option = sys.argv[1]
     # 打印所有项目
     if option == '-ls':
@@ -213,6 +216,7 @@ if __name__ == '__main__':
             logging.info(repo_list)
             for i in repo_list:
                 del_target(i)
+        repo_table_list('true')
 
     # 以ID删除
     elif option == '-id':
@@ -228,6 +232,7 @@ if __name__ == '__main__':
             logging.info(repo_id_list)
             for i in pre_del_list:
                 del_target(i)
+        repo_table_list('true')
 
     # 删除所有项目
     elif option == '-all':
