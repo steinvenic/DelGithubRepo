@@ -30,7 +30,10 @@ def serialize_cookie(cookie):
         pickle.dump({k.key: k.value for k in SimpleCookie(cookie).values()}, f)
 
 def deserialize_cookie():
-    with open('cookie', 'rb') as f:
-        return pickle.load(f)
+    try:
+        with open('cookie', 'rb') as f:
+            return pickle.load(f)
+    except:
+        set_config('islogin','')
 
 
