@@ -74,6 +74,7 @@ def login():
     else:
         logging.info('登陆失败，请检查配置文件【conf.ini】用户名和密码！')
         set_config('isLogin', 'False')
+        sys.exit(1)
     serialize_cookie(cookie)
 
 
