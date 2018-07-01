@@ -246,15 +246,25 @@ def del_target(repo_name):
 
 
 if __name__ == '__main__':
-    '''
-    click不易获取不定数量的参数，因此使用sys.argv获取命令参数
-    '''
+    # click不易获取不定数量的参数，因此使用sys.argv获取命令参数
+    option = sys.argv[1]
+    if option == '-help' or option == '-h':
+        print('''
+          -ls:【打印所有项目列表】
+          -id:【以-ls项目ID删除项目，多个用空格隔开，请仔细确认被删除项目名称！】
+        -name:【以项目名称删除项目，多个用空格隔开】
+         -all:【删除所有项目，请谨慎使用！】
+        -fork:【删除所有fork的项目，请谨慎使用】
+           -h:【显示本帮助】
+        ''')
+        sys.exit(1)
+
     if get_config('user_name') == '' or get_config('password') == '':
         logging.info('登陆失败，请检查配置文件【conf.ini】用户名和密码！')
         sys.exit(1)
-    option = sys.argv[1]
+
     # 打印所有项目
-    if option == '-ls':
+    elif option == '-ls':
         repo_table_list('true', get_all_repo_list())
 
     # 以项目名方式删除
@@ -307,12 +317,3 @@ if __name__ == '__main__':
             logging.info(repo_list)
             for i in repo_list:
                 del_target(i)
-    elif option == '-help' or option == '-h':
-        print('''
-          -ls:【打印所有项目列表】
-          -id:【以-ls项目ID删除项目，多个用空格隔开，请仔细确认被删除项目名称！】
-        -name:【以项目名称删除项目，多个用空格隔开】
-         -all:【删除所有项目，请谨慎使用！】
-        -fork:【删除所有fork的项目，请谨慎使用】
-           -h:【显示本帮助】
-        ''')
