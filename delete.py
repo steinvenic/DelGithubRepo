@@ -142,10 +142,39 @@ def get_repo_list(page):
     return re_repo_list, repo_nums
 
 
+def get_fork_list(page):
+    '''
+    获取指定页面的Fork项目名称&项目数量
+    :param page:
+    :return: re_repo_list==>该页项目名称集合,repo_nums==>该页项目数目
+    '''
+    url = 'https://github.com/' + get_config('nick_name')
+    params = {
+        "language": "",
+        "page": page,
+        "q": "",
+        "tab": "repositories",
+        "type": "fork",
+        "utf8": "✓"
+    }
+
+    raw_html = requests.get(url, params, cookies=deserialize_cookie(), headers=headers, verify=False)
+    if raw_html.status_code != 200 or get_config('isLogin') == 'False' or get_config('isLogin') == '':
+        get_cookie()
+        login()
+        url = 'https://github.com/' + get_config('nick_name')
+        raw_html = requests.get(url, params, cookies=deserialize_cookie(), headers=headers, verify=False)
+    e_html = etree.HTML(raw_html.text)
+    repo_list = e_html.xpath('//ul/li//a[@itemprop="name codeRepository"]/text()')
+    re_repo_list = [x.strip() for x in repo_list]
+    repo_nums = e_html.xpath('//a[@title="Repositories"]/span/text()')[0]
+    return re_repo_list, repo_nums
+
+
 def get_all_repo_list():
     '''
     获取当前账号所有项目名称集合
-    :return:
+    :return:all_repo_list==>>所有项目名称集合
     '''
     if get_config('isLogin') == 'False' or get_config('isLogin') == '':
         get_cookie()
@@ -162,19 +191,39 @@ def get_all_repo_list():
         return all_repo_list
 
 
-def repo_table_list(flag):
+def get_all_fork_repo_list():
+    '''
+    获取当前账号所有项目名称集合
+    :return:所有fork项目名称集合
+    '''
+    if get_config('isLogin') == 'False' or get_config('isLogin') == '':
+        get_cookie()
+        login()
+    d = get_fork_list(1)
+    all_repo_list = d[0]
+    repo_nums = int(d[1])
+    if repo_nums < 31:
+        return all_repo_list
+    else:
+        pages = repo_nums // 30 + 1
+        for i in range(2, pages + 1):
+            all_repo_list += get_fork_list(i)[0]
+        return all_repo_list
+
+
+def repo_table_list(flag, all_repo_list):
     '''
     使用prettytable在终端显示项目列表
 
     :param flag: true==>不打印输出
     :return:
     '''
-    repo_list = get_all_repo_list()
+    repo_list = all_repo_list
     list_len = len(repo_list)
     tb = pt.PrettyTable()
     tb.field_names = ['ID_1', 'RepoName_1', 'ID_2', 'RepoName_2']
     for i in range(0, list_len - 1, 2):
-        tb.add_row(['[' + str(i) + ']', repo_list[i], '[' + str(i+1) + ']', repo_list[i + 1]])
+        tb.add_row(['[' + str(i) + ']', repo_list[i], '[' + str(i + 1) + ']', repo_list[i + 1]])
     if list_len % 2 == 1:
         tb.add_row([list_len - 1, repo_list[-1], '*', '*'])
     if flag == 'true':
@@ -206,7 +255,7 @@ if __name__ == '__main__':
     option = sys.argv[1]
     # 打印所有项目
     if option == '-ls':
-        repo_table_list('true')
+        repo_table_list('true', get_all_repo_list())
 
     # 以项目名方式删除
     elif option == '-name':
@@ -217,15 +266,19 @@ if __name__ == '__main__':
             logging.info(repo_list)
             for i in repo_list:
                 del_target(i)
-        repo_table_list('true')
+        repo_table_list('true', get_all_repo_list())
 
     # 以ID删除
     elif option == '-id':
         pre_del_list = []
         repo_id_list = sys.argv[2:]
-        repo_list = repo_table_list('false')
+        repo_list = repo_table_list('false', get_all_repo_list())
         for pre_del in repo_id_list:
-            pre_del_list.append(repo_list[int(pre_del)])
+            try:
+                pre_del_list.append(repo_list[int(pre_del)])
+            except:
+                logging.info('删除失败,请重新获取项目列表')
+                sys.exit(1)
 
         confirm_status = input('确认删除%s？,按y确认' % str(pre_del_list))
         if confirm_status == 'y':
@@ -233,14 +286,33 @@ if __name__ == '__main__':
             logging.info(repo_id_list)
             for i in pre_del_list:
                 del_target(i)
-        repo_table_list('true')
+        repo_table_list('true', get_all_repo_list())
 
     # 删除所有项目
     elif option == '-all':
-        repo_list = repo_table_list('false')
+        repo_list = repo_table_list('false', get_all_repo_list())
         confirm_status = input('确认删除所有项目？？？？%s,按y确认' % str(repo_list))
         if confirm_status == 'y':
             set_config('pre_del', str(repo_list))
             logging.info(repo_list)
             for i in repo_list:
                 del_target(i)
+
+    # 删除所有fork项目
+    elif option == '-fork':
+        repo_list = repo_table_list('false', get_all_fork_repo_list())
+        confirm_status = input('确认删除所有Fork项目？？？？%s,按y确认' % str(repo_list))
+        if confirm_status == 'y':
+            set_config('pre_del', str(repo_list))
+            logging.info(repo_list)
+            for i in repo_list:
+                del_target(i)
+    elif option == '-help' or option == '-h':
+        print('''
+          -ls:【打印所有项目列表】
+          -id:【以-ls项目ID删除项目，多个用空格隔开，请仔细确认被删除项目名称！】
+        -name:【以项目名称删除项目，多个用空格隔开】
+         -all:【删除所有项目，请谨慎使用！】
+        -fork:【删除所有fork的项目，请谨慎使用】
+           -h:【显示本帮助】
+        ''')
