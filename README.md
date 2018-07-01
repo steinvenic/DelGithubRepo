@@ -10,7 +10,7 @@
 
 #  用法
 
-* 修改配置文件conf.ini，改成自己的账号和密码,`isLogin`不要填写，如果更改账号，一定要清空`isLogin`！  
+* 修改配置文件conf.ini，改成自己的账号和密码,`isLogin`的值不要填写，如果更改账号，一定要清空`isLogin`的值或改为False！
 * `python delete.py -ls`    ====>显示项目列表
 * `python delete.py -name test1 test2`    ====>删除test1 test2两个项目
 * `python delete.py -id 0 1`              ====>删除ID 0、1对应的项目,请仔细确认被删除的项目名称！
