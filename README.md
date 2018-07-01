@@ -6,7 +6,7 @@
 # 安装 
 * Python3.6
 * `pip install -r requirements.txt`
-*  没有Python环境，请使用[Release](https://github.com/steinvenic/DelGithubRepo/releases)
+*  没有Python环境，请使用[Release](https://github.com/steinvenic/DelGithubRepo/releases)，提供Win、Linux、Mac版本
 *  提供[百度云下载](https://pan.baidu.com/s/1hy59KV_nHQtn1Ogd0E1hdg)，密码`6ufa`
 
 #  使用
