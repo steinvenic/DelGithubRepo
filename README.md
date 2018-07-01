@@ -17,6 +17,8 @@
 * `delete.exe -ls`    ====>显示所有项目列表
 * `delete.exe -name test1 test2`    ====>删除test1 test2两个项目
 * `delete.exe -id 0 1`              ====>删除ID 0、1对应的项目,请仔细确认被删除的项目名称！
+* `delete.exe -fork`    ====>删除所有Fork的项目
+* `delete.exe -all`    ====>删除所有项目
 ![avartar](https://github.com/steinvenic/DelGithubRepo/blob/master/20180624002334.png)
 
 #  问题
