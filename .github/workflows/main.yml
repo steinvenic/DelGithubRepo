@@ -31,7 +31,7 @@
        run: |
          echo Add other actions to build,
          echo test, and deploy your project.
-         docker run -v $GITHUB_WORKSPACE:/src cdrx/pyinstaller-windows:latest 'pip install -r requirements.txt;pyinstaller -F --clean -y --dist ./ --workpath /tmp delete.py'
+         docker run -v $GITHUB_WORKSPACE:/src cdrx/pyinstaller-windows:python3 'pyinstaller -F --clean -y --dist ./ --workpath /tmp delete.py'
          zip -r $GITHUB_WORKSPACE/delete.zip $GITHUB_WORKSPACE/delete.exe
      - name: Create Release
        id: create_release
