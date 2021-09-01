@@ -31,8 +31,8 @@
        run: |
          echo Add other actions to build,
          echo test, and deploy your project.
-         docker run -v $GITHUB_WORKSPACE:/src cdrx/pyinstaller-windows:latest 'pyinstaller -F --clean -y --dist ./ --workpath /tmp test2.py'
-         zip -r $GITHUB_WORKSPACE/test2.zip $GITHUB_WORKSPACE/test2.exe
+         docker run -v $GITHUB_WORKSPACE:/src cdrx/pyinstaller-windows:latest 'pip install -r requirements.txt;pyinstaller -F --clean -y --dist ./ --workpath /tmp delete.py'
+         zip -r $GITHUB_WORKSPACE/delete.zip $GITHUB_WORKSPACE/delete.exe
      - name: Create Release
        id: create_release
        uses: actions/create-release@v1
@@ -50,6 +50,6 @@
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
        with:
          upload_url: ${{ steps.create_release.outputs.upload_url }}
-         asset_path: ${{ github.workspace }}/test2.zip
+         asset_path: ${{ github.workspace }}/delete.zip
          asset_name: nainiu_upload.zip
          asset_content_type: application/zip
