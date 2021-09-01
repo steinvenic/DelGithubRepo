@@ -53,3 +53,4 @@
          asset_path: ${{ github.workspace }}/delete.zip
          asset_name: nainiu_upload.zip
          asset_content_type: application/zip
+
